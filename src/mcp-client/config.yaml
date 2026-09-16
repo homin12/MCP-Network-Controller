@@ -1,0 +1,33 @@
+project_id: "330103ff-d1f4-4bc5-b3c8-1d1ac948e9df"
+
+mcp:
+  server_url: "http://mcp-server:5000/mcp"
+  timeout: 60
+
+llm:
+  provider: ollama
+  model: qwen2.5-coder:14b
+  host: http://ollama:11434
+  timeout: 120
+
+rag:
+  enabled: true
+  force_rebuild: false
+  persist_directory: ./rag_data
+  collection_name: network_commands
+  max_documents: 5
+  min_confidence: 0.50
+
+validation:
+  enabled: true
+  batfish_host: http://batfish:9996
+  timeout: 60
+  check_types:
+    - syntax
+    - routing
+    - compliance
+
+hitl:
+  enabled: true
+  timeout: 300
+  auto_approve: false

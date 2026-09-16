@@ -1,0 +1,29 @@
+- content: 'OSPF: Всегда используйте area 0 для backbone распределенной сети.'
+  id: bp_ospf_area0
+  metadata:
+    category: best_practice
+    protocol: OSPF
+
+- id: guide_variable_matching
+  content: |
+    Руководство по замене шаблонов в угловых скобках реальными данными:
+    - Шаблон <interface-name> — заменяй на имя интерфейса из карты сети (например: GigabitEthernet0/0, FastEthernet1/0).
+    - Шаблон <ip-address> — заменяй на IP-адрес, назначенный конкретному устройству.
+    - Шаблон <neighbor-ip> — заменяй на IP-адрес противоположного (соседнего) устройства в данном линке.
+    - Шаблон <network> — рассчитывай как адрес подсети на основе IP-адреса интерфейса (например, если IP 192.168.1.5/24, то <network> равен 192.168.1.0).
+  metadata:
+    category: guide
+    type: variable_mapping
+
+- id: policy_hardware_c3725_naming
+  content: |
+    Аппаратная спецификация и ограничения платформы Cisco 3725:
+    - На маршрутизаторах модели Cisco 3725 ФИЗИЧЕСКИ ОТСУТСТВУЮТ интерфейсы GigabitEthernet.
+    - Все встроенные порты данной платформы относятся к типу FastEthernet.
+    - При генерации CLI команд для устройств Cisco 3725 (например, R1, R2, R3) ЗАПРЕЩЕНО использовать синтаксис "interface GigabitEthernet0/0".
+    - Вместо этого всегда используйте строго физические имена портов: "interface FastEthernet0/0" или "interface FastEthernet0/1".
+  metadata:
+    category: policy
+    device_type: router
+    hardware_model: c3725
+    command: interface

@@ -1,0 +1,6 @@
+- content: RFC 2328 - OSPF Version 2. Протокол маршрутизации на базе алгоритма Дейкстры.
+  id: rfc_2328_ospf
+  metadata:
+    category: rfc
+    protocol: OSPF
+    rfc_number: '2328'

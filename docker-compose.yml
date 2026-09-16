@@ -1,0 +1,158 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build:
+      context: ./src/mcp-server/McpServer
+      dockerfile: Dockerfile
+    container_name: mcp-server
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0
+      - ASPNETCORE_HTTP_PORTS=5000
+      - GNS3_BASEURL=http://docker.internal
+      - ASPNETCORE_ENVIRONMENT=Docker
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+  mcp-client:
+    build:
+      context: ./src/mcp-client
+      dockerfile: Dockerfile
+    container_name: mcp-client
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - BATFISH_HOST=http://batfish:9996
+      - PORT=8000
+      - HOST=0.0.0.0
+      - CONFIG_PATH=/app/config.yaml
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      - ./src/mcp-client/config.yaml:/app/config.yaml:ro
+    networks:
+      - mcp-network
+
+  ollama:
+    image: ollama/ollama:0.33.3
+    container_name: ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=4
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - mcp-network
+
+  batfish:
+    image: batfish/allinone:test-2023.12.19.1278
+    container_name: batfish
+    environment:
+      - BATFISH_LOG_LEVEL=WARN
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9996/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - mcp-network
+    volumes:
+      - batfish_data:/data
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/local-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    volumes:
+      - ./promtail/promtail-config.yaml:/etc/promtail/config.yaml:ro
+      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro 
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.159.0
+    container_name: otel-collector
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otel-collector-config.yaml:ro
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    networks:
+      - mcp-network
+    restart: unless-stopped
+
+networks:
+  mcp-network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  ollama_data:
+  batfish_data:
+    driver: local

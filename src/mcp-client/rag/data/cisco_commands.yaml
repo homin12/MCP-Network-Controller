@@ -1,0 +1,41 @@
+- content: show running-config - Показывает текущую конфигурацию устройства
+  id: cmd_show_running_config
+  metadata:
+    category: show
+    command: show running-config
+    device_type: router
+- content: 'router ospf <process-id> - Включает OSPF на устройстве
+
+    network <network> <wildcard-mask> area <area-id> - Настраивает OSPF сеть'
+  id: cmd_conf_ospf
+  metadata:
+    category: configure
+    command: router ospf
+    device_type: router
+
+- id: cmd_bgp_basic_peer
+  content: |
+    configure terminal
+    router bgp <local-as>
+    neighbor <neighbor-ip> remote-as <peer-as>
+    neighbor <neighbor-ip> description Link_to_Neighbor
+    address-family ipv4 unicast
+    neighbor <neighbor-ip> activate
+    exit
+  metadata:
+    category: configure
+    protocol: bgp
+    command: router bgp
+    device_type: router
+
+- id: cmd_interface_ip_setup
+  content: |
+    configure terminal
+    interface <interface-name>
+    ip address <ip-address> <subnet-mask>
+    no shutdown
+    exit
+  metadata:
+    category: configure
+    command: interface
+    device_type: router
